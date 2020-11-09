@@ -20,8 +20,13 @@ machine.
 Otherwise update _load_train_test_datasets() below to return your own dataset.
 """
 
-ucr_dataset_base_folder = expanduser('~/ws/data/UCR_TS_Archive_2015/')
+ucr_dataset_base_folder = expanduser('./UCR_TS_Archive_2015/')
 ucr_dataset_name = 'Gun_Point'
+
+ucr_dataset_base_folder = expanduser('./data/')
+ucr_dataset_name = 'mimic'
+feature_names = ['II']
+MAX_LENGTH = 1000
 
 
 def main():
@@ -41,7 +46,7 @@ def main():
         lamda=0.01,
         eta=0.01,
         shapelet_initialization='segments_centroids',
-        plot_loss=True
+        plot_loss=False
     )
 
     # train the classifier
@@ -67,10 +72,20 @@ def _load_train_test_datasets():
         train_data and test_data shape is: (n_samples, n_features)
         train_labels and test_labels shape is: (n_samples)
     """
-    return ucr_dataset_loader.load_dataset(
-        dataset_name=ucr_dataset_name,
-        dataset_folder=ucr_dataset_base_folder
-    )
+    if 'mimic' in ucr_dataset_name:
+        print("loading mimic data...")
+        return ucr_dataset_loader.load_mimic(
+            dataset_name=ucr_dataset_name,
+            dataset_folder=ucr_dataset_base_folder, 
+            feature_names=feature_names,
+            MAX_LENGTH = MAX_LENGTH
+            )
+    else:
+        print("loading data...")
+        return ucr_dataset_loader.load_dataset(
+            dataset_name=ucr_dataset_name,
+            dataset_folder=ucr_dataset_base_folder
+        )
 
 
 if __name__ == '__main__':

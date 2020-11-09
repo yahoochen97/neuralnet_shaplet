@@ -98,13 +98,14 @@ class LtsShapeletClassifier(BaseEstimator):
         self.network.add_layer(self._get_shapelets_layer())
 
         # linear layer
-        self.network.add_layer(LinearLayer(self.n_shapelets, 24, self.eta, self.lamda, self.train_size),
-                               regularized=True)
+        # self.network.add_layer(LinearLayer(self.n_shapelets, 24, self.eta, self.lamda, self.train_size),
+        #                        regularized=True)
+
         # sigmoid layer
-        self.network.add_layer(SigmoidLayer(24))
+        # self.network.add_layer(SigmoidLayer(24))
 
         # linear layer
-        self.network.add_layer(LinearLayer(24, self.output_size, self.eta, self.lamda, self.train_size),
+        self.network.add_layer(LinearLayer(self.n_shapelets, self.output_size, self.eta, self.lamda, self.train_size),
                                regularized=True)
         # sigmoid layer
         self.network.add_layer(SigmoidLayer(self.output_size))

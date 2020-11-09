@@ -4,6 +4,7 @@ from random import sample
 
 import pandas as pd
 import seaborn as sns
+import matplotlib.pyplot as plt
 
 
 def plot_sample_shapelets(shapelets, sample_size=1e6):
@@ -30,3 +31,4 @@ def plot_sample_shapelets(shapelets, sample_size=1e6):
     # plot the shapelets
     grid = sns.FacetGrid(shapelets_df, col="shapelet", col_wrap=6)
     grid.map(sns.lineplot, "X", "Y")
+    plt.savefig("sample.png")
