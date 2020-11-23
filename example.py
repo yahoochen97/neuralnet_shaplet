@@ -7,6 +7,8 @@ from sklearn.metrics import classification_report
 from shapelets_lts.classification import LtsShapeletClassifier
 from shapelets_lts.util import ucr_dataset_loader, plot_sample_shapelets
 
+from mimicdataset import MimicDataset
+
 """
 This example uses dataset from the UCR archive "UCR Time Series Classification
 Archive" format.  
@@ -21,16 +23,19 @@ Otherwise update _load_train_test_datasets() below to return your own dataset.
 """
 
 ucr_dataset_base_folder = expanduser('./UCR_TS_Archive_2015/')
-ucr_dataset_name = 'Gun_Point'
+ucr_dataset_name = 'Gun_point'
 
-ucr_dataset_base_folder = expanduser('./data/')
-ucr_dataset_name = 'mimic'
-feature_names = ['II']
-MAX_LENGTH = 1000
+# ucr_dataset_base_folder = expanduser('./data/')
+# ucr_dataset_name = 'mimic'
+# feature_names = ['II']
+# MAX_LENGTH = 1000
 
 
 def main():
     # load the data
+
+    # mimicdataset = MimicDataset("mimic.zip", feature_name="II")
+
     print('\nLoading data...')
     x_train, y_train, x_test, y_test = _load_train_test_datasets()
 
