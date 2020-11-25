@@ -1,6 +1,5 @@
 import torch
 import torch.nn as nn
-import torch.optim as optim
 
 from torch.nn.modules.module import Module
 from shapelets_lts.util.utils import get_centroids_of_segments

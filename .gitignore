@@ -2,8 +2,8 @@
 *.pyc
 .cache/
 workspace/
-data
-loss.png
+data/
 *.egg-info
 mimic.zip
 UCR_TS_Archive_2015
+shapelets_lts/

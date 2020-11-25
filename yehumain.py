@@ -8,87 +8,92 @@ import numpy as np
 from dataloader import UCRDataset
 from os.path import expanduser
 
-from yehumodel import Net
+from yehumodel import Net, SoftMinLayer
 
-if torch.cuda.is_available():  
-  dev = "cuda:0" 
-else:  
-  dev = "cpu"  
+if torch.cuda.is_available():
+    dev = "cuda:0"
+else:
+    dev = "cpu"
 
-device = torch.device(dev) 
+device = torch.device(dev)
 
 transform = transforms.Compose([
     transforms.ToTensor()])
 
 transform = None
 
-dataset_name='Gun_Point'
+dataset_name = 'Gun_Point'
 
 trainset = UCRDataset(dataset_name=dataset_name,
                       dataset_folder='./UCR_TS_Archive_2015/',
                       TYPE="TRAIN",
                       transform=transform)
 trainloader = torch.utils.data.DataLoader(trainset, batch_size=64,
-                                         shuffle=True, num_workers=1)
+                                          shuffle=True, num_workers=1)
 
 testset = UCRDataset(dataset_name=dataset_name,
-                      dataset_folder='./UCR_TS_Archive_2015/',
-                      TYPE="TEST",
-                      transform=transform)
+                     dataset_folder='./UCR_TS_Archive_2015/',
+                     TYPE="TEST",
+                     transform=transform)
 testloader = torch.utils.data.DataLoader(testset, batch_size=64,
-                                        shuffle=True, num_workers=1)
+                                         shuffle=True, num_workers=1)
 
 torch.autograd.set_detect_anomaly(True)
 
+
 def main():
     n, m = trainset.data.shape
-    K = int(n*0.15)
-    L = int(m*0.2)
+    K = int(n * 0.15)
+    L = int(m * 0.2)
     R = 3
-    alpha = -5
-    print(K)
-    print(L)
+    alpha = -10
 
     net = Net(data=trainset.data, K=K, L=L, R=R, device=device, alpha=alpha)
 
-    for p in net.parameters():
-                print(p.shape)
-                
     net.to(device)
 
     criterion = nn.CrossEntropyLoss()
-    optimizer = optim.SGD(net.parameters(), lr=0.1, weight_decay=0.1)
+    optimizer = optim.SGD(net.parameters(), lr=1, weight_decay=0.0, momentum=0.95)
 
-    num_epoches = 30
+    num_epoches = 50
     cost = []
 
     print("Start training...\n")
 
-    for epoch in range(num_epoches):    
-        
+    for epoch in range(num_epoches):
+
         i = 0
         for data in trainloader:
-
             inputs, labels = data
             inputs = inputs.to(device)
             labels = labels.to(device)
 
             # zeros gradient
             optimizer.zero_grad()
-            
+
             # Forwarding, backpropogation, optimization
             outputs = net(inputs)
+            #
+            # for child in net.children():
+            #      print(child)
+            #      for param in child.parameters():
+            #          print(param.requires_grad)
+            #          print(param.shape)
+            #print(list(list(net.children())[0].smls[1].parameters())[0].requires_grad)
 
             loss = criterion(outputs, labels.long())
             loss.backward()
-            
+
             # Update parameters
             optimizer.step()
-            
+
+            # for p in net.parameters():
+            #     print(torch.mean(p))
+
             # show cost
             running_loss = loss.item()
-            print('[%d, %5d] loss: %.3f' % 
-                (epoch + 1, i + 1, running_loss))
+            print('[%d, %5d] loss: %.3f' %
+                  (epoch + 1, i + 1, running_loss))
             cost.append(running_loss)
             i += 1
 
@@ -110,10 +115,9 @@ def main():
             total += labels.size(0)
             correct += (predicted == labels).sum().item()
 
-    print('Accuracy of the network on test data: %.3f %%' % 
-        (100 * correct / total))
+    print('Accuracy of the network on test data: %.3f %%' %
+          (100 * correct / total))
 
 
 if __name__ == '__main__':
     main()
-
