@@ -1,5 +1,4 @@
 import torch
-import torchvision.transforms as transforms
 import torch.nn as nn
 import torch.optim as optim
 import matplotlib.pyplot as plt
@@ -7,45 +6,42 @@ import numpy as np
 
 from dataloader import UCRDataset
 from os.path import expanduser
+import sys
 
 from yehumodel import Net, SoftMinLayer
 
-if torch.cuda.is_available():
-    dev = "cuda:0"
-else:
-    dev = "cpu"
+def define_optimizers(net):
+    optimizers = [("SGD_Vanilla", optim.SGD(net.parameters(), lr=1)),
+                  ("SGD_Momentum", optim.SGD(net.parameters(), lr=1, momentum=0.95)),
+                  ("SGD_Nesterov", optim.SGD(net.parameters(), lr=1, momentum=0.95, nesterov=True)),
+                  ("Adam", optim.Adam(net.parameters(), lr=0.1)),
+                  ("LBFGS", optim.LBFGS(net.parameters(), lr=1))
+                 ]
 
-device = torch.device(dev)
-
-transform = transforms.Compose([
-    transforms.ToTensor()])
-
-transform = None
-
-dataset_name = 'Gun_Point'
-
-trainset = UCRDataset(dataset_name=dataset_name,
-                      dataset_folder='./UCR_TS_Archive_2015/',
-                      TYPE="TRAIN",
-                      transform=transform)
-trainloader = torch.utils.data.DataLoader(trainset, batch_size=64,
-                                          shuffle=True, num_workers=1)
-
-testset = UCRDataset(dataset_name=dataset_name,
-                     dataset_folder='./UCR_TS_Archive_2015/',
-                     TYPE="TEST",
-                     transform=transform)
-testloader = torch.utils.data.DataLoader(testset, batch_size=64,
-                                         shuffle=True, num_workers=1)
-
-torch.autograd.set_detect_anomaly(True)
+    return optimizers
 
 
-def main():
+def main(trainset, testset, dataset_name):
+    if torch.cuda.is_available():
+        dev = "cuda:0"
+    else:
+        dev = "cpu"
+
+    device = torch.device(dev)
+
     n, m = trainset.data.shape
+
+    trainloader = torch.utils.data.DataLoader(trainset, batch_size=n,
+                                            shuffle=True, num_workers=1)
+                                            
+    testloader = torch.utils.data.DataLoader(testset, batch_size=64,
+                                            shuffle=True, num_workers=1)
+
+    
     K = int(n * 0.15)
     L = int(m * 0.2)
     R = 3
+    lambda_reg = 1e-4
     alpha = -10
 
     net = Net(data=trainset.data, K=K, L=L, R=R, device=device, alpha=alpha)
@@ -53,53 +49,51 @@ def main():
     net.to(device)
 
     criterion = nn.CrossEntropyLoss()
-    optimizer = optim.SGD(net.parameters(), lr=1, weight_decay=0.0, momentum=0.95)
-
     num_epoches = 50
-    cost = []
+    
+    # optimizer = optim.Adam(net.parameters(), lr=0.1)
+    optimizers = define_optimizers(net)
+    
+    train_loss = np.zeros((len(optimizers), num_epoches))
 
     print("Start training...\n")
 
-    for epoch in range(num_epoches):
+    for i, optimizer in enumerate(optimizers):
 
-        i = 0
-        for data in trainloader:
-            inputs, labels = data
-            inputs = inputs.to(device)
-            labels = labels.to(device)
+        for epoch in range(num_epoches):
 
-            # zeros gradient
-            optimizer.zero_grad()
+            for data in trainloader:
+                inputs, labels = data
+                inputs = inputs.to(device)
+                labels = labels.to(device)
 
-            # Forwarding, backpropogation, optimization
-            outputs = net(inputs)
-            #
-            # for child in net.children():
-            #      print(child)
-            #      for param in child.parameters():
-            #          print(param.requires_grad)
-            #          print(param.shape)
-            #print(list(list(net.children())[0].smls[1].parameters())[0].requires_grad)
+                # zeros gradient
+                optimizer.zero_grad()
 
-            loss = criterion(outputs, labels.long())
-            loss.backward()
+                # Forwarding, backpropogation, optimization
+                outputs = net(inputs)
 
-            # Update parameters
-            optimizer.step()
+                loss = criterion(outputs, labels.long())
+                all_linear1_params = torch.cat([x.view(-1) for x in net.fc1.parameters()])
+                all_linear2_params = torch.cat([x.view(-1) for x in net.fc2.parameters()])
 
-            # for p in net.parameters():
-            #     print(torch.mean(p))
+                loss += lambda_reg * torch.norm(all_linear1_params, 2) + lambda_reg * torch.norm(all_linear2_params, 2)
 
-            # show cost
-            running_loss = loss.item()
-            print('[%d, %5d] loss: %.3f' %
-                  (epoch + 1, i + 1, running_loss))
-            cost.append(running_loss)
-            i += 1
+                loss.backward()
 
-    plt.plot(cost)
-    plt.ylabel('cost')
-    plt.show()
+                # Update parameters
+                optimizer.step()
+
+                # show cost
+                running_loss = loss.item()
+                print('[%d] loss: %.3f' %
+                    (epoch + 1, running_loss))
+            
+            train_loss[i, epoch] = running_loss
+
+        plt.plot(train_loss[i])
+        plt.ylabel('training loss')
+        plt.show()
 
     print("Start testing...\n")
 
@@ -118,6 +112,23 @@ def main():
     print('Accuracy of the network on test data: %.3f %%' %
           (100 * correct / total))
 
-
 if __name__ == '__main__':
-    main()
+
+    if len(sys.argv)==1:
+        dataset_name = 'Gun_Point'
+    else:
+        dataset_name = sys.argv[1]
+
+    print(dataset_name)
+
+    trainset = UCRDataset(dataset_name=dataset_name,
+                        dataset_folder='./UCR_TS_Archive_2015/',
+                        TYPE="TRAIN")
+
+    testset = UCRDataset(dataset_name=dataset_name,
+                        dataset_folder='./UCR_TS_Archive_2015/',
+                        TYPE="TEST")
+
+    torch.autograd.set_detect_anomaly(True)
+
+    main(trainset, testset, dataset_name)
