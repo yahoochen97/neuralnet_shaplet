@@ -13,7 +13,6 @@ def define_optimizers():
     opt_names = ["SGD_Vanilla",
                 "SGD_Momentum",
                 "SGD_Nesterov",
-                "RMSprop",
                 "Adam"]
 
     return opt_names
@@ -44,7 +43,7 @@ def main(trainset, testset, dataset_name):
     alpha = -10
 
     criterion = nn.CrossEntropyLoss()
-    num_epoches = 50
+    num_epoches = 100
     
     # optimizer = optim.Adam(net.parameters(), lr=0.1)
     opt_names = define_optimizers()
@@ -58,15 +57,13 @@ def main(trainset, testset, dataset_name):
         net.to(device)
 
         if opt_name=="SGD_Vanilla":
-            optimizer = optim.SGD(net.parameters(), lr=1)
+            optimizer = optim.SGD(net.parameters(), lr=0.01)
         elif opt_name=="SGD_Momentum":
-            optimizer = optim.SGD(net.parameters(), lr=1, momentum=0.95)
+            optimizer = optim.SGD(net.parameters(), lr=0.01, momentum=0.95)
         elif opt_name=="SGD_Nesterov":
-            optimizer = optim.SGD(net.parameters(), lr=1, momentum=0.95, nesterov=True)
-        elif opt_name=="RMSprop":
-            optimizer = optim.RMSprop(net.parameters(), lr=0.1)
+            optimizer = optim.SGD(net.parameters(), lr=0.01, momentum=0.95, nesterov=True)
         else:
-            optimizer = optim.Adam(net.parameters(), lr=0.1)
+            optimizer = optim.Adam(net.parameters(), lr=0.01)
 
         print(opt_names[i])
 

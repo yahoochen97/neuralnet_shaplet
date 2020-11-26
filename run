@@ -1,5 +1,5 @@
 #!/bin/bash
-declare -a datasets=("ArrowHead" "Beef" "Coffee" "FaceFour" "Gun_Point" "OliveOil" "Plane" "Trace" "Wine")
+declare -a datasets=("Adiac" "BeetleFly" "Coffee" "Earthquakes" "Gun_Point" "OSULeaf" "Plane" "Strawberry" "Worms")
 
 mkdir -p results
 
