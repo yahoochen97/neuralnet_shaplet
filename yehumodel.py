@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 
-from shapelets_lts.util.utils import get_centroids_of_segments
+from utils import get_centroids_of_segments
 
 
 class SoftMinLayer(nn.Module):
