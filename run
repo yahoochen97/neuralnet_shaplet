@@ -1,52 +1,8 @@
 #!/bin/bash
-declare -a datasets=("Gun_Point" )
+declare -a datasets=("ArrowHead" "Beef" "Coffee" "FaceFour" "Gun_Point" "OliveOil" "Plane" "Trace" "Wine")
 
-mkdir -p nlZs
+mkdir -p results
 
-# declare -a input_strs=(0)
-# declare -a cv_years=(2012)
-
-number_file(){
-    input_str=$1
-    cv_year=$2
-    TYPE=$3
-    echo $(ls nlZs/"$TYPE"_"$cv_year"day"$input_str"* | wc -l)
-}
-
-one_job(){
-    input_str=$1
-    cv_year=$2
-    TYPE=$3
-    # echo $("./onerun $input_str $cv_year $TYPE")
-    echo $(bsub -R '(!gpu) span[hosts=1]' -G SEAS-Lab-Garnett -o /home/research/chenyehu/log/Log."${input_str}_${cv_year}_${TYPE}" -J "${input_str}_${cv_year}_${TYPE}" "./onerun $input_str $cv_year $TYPE")
-}
-
-# for TYPE in ${TYPES[@]}; do
-#     for input_str in ${input_strs[@]}; do
-#         # bsub -R '(!gpu) span[hosts=1]' -G SEAS-Lab-Garnett "./matlabrun '$TYPE' $input_str"
-#         for cv_year in ${cv_years[@]}; do
-#             # for (( i=1; i<=$SEARCH_SIZE; i++ )) do 
-#             #     nlZs=$(one_job $input_str $cv_year $TYPE $i)
-# 	        #     echo $nlZs
-#             # done
-#     	    # nlZs=$(one_job $input_str $cv_year $TYPE)
-# 	        # echo $nlZs
-#             # n=$(number_file $input_str $cv_year $TYPE)
-#             # if [ $n -lt 100 ]
-#             # then
-#             #     echo $TYPE $cv_year $input_str
-#             # fi
-#             # echo downloadresults/"LOO${TYPE}_${cv_year}day${input_str}_${best_cv_idx[i]}.csv"
-            
-#     	done
-#         i=$((i+1))
-#     done
-# done
-
-declare -a input_strs=(0)
-
-for input_str in ${input_strs[@]}; do
-    for cv_year in ${cv_years[@]}; do
-        bsub -R '(!gpu) span[hosts=1]' -G SEAS-Lab-Garnett -J "${input_str}_${cv_year}" "./onerun $input_str $cv_year"
-    done
+for dataset in ${datasets[@]}; do
+    bsub -R '(!gpu) span[hosts=1]' -G SEAS-Lab-Garnett -J "${dataset}" "./onerun $dataset"
 done

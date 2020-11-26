@@ -3,6 +3,7 @@ import torch.nn as nn
 import torch.optim as optim
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 
 from dataloader import UCRDataset
 from os.path import expanduser
@@ -11,14 +12,20 @@ import sys
 from yehumodel import Net, SoftMinLayer
 
 def define_optimizers(net):
-    optimizers = [("SGD_Vanilla", optim.SGD(net.parameters(), lr=1)),
-                  ("SGD_Momentum", optim.SGD(net.parameters(), lr=1, momentum=0.95)),
-                  ("SGD_Nesterov", optim.SGD(net.parameters(), lr=1, momentum=0.95, nesterov=True)),
-                  ("Adam", optim.Adam(net.parameters(), lr=0.1)),
-                  ("LBFGS", optim.LBFGS(net.parameters(), lr=1))
-                 ]
+    opt_names = ["SGD_Vanilla",
+                "SGD_Momentum",
+                "SGD_Nesterov",
+                "Adam",
+                "LBFGS"]
 
-    return optimizers
+    optimizers = [optim.SGD(net.parameters(), lr=1),
+                  optim.SGD(net.parameters(), lr=1, momentum=0.95),
+                  optim.SGD(net.parameters(), lr=1, momentum=0.95, nesterov=True),
+                  optim.Adam(net.parameters(), lr=0.1),
+                  optim.LBFGS(net.parameters(), lr=1)
+                ]
+
+    return optimizers, opt_names
 
 
 def main(trainset, testset, dataset_name):
@@ -30,6 +37,7 @@ def main(trainset, testset, dataset_name):
     device = torch.device(dev)
 
     n, m = trainset.data.shape
+    C = np.unique(trainset.labels).shape[0]
 
     trainloader = torch.utils.data.DataLoader(trainset, batch_size=n,
                                             shuffle=True, num_workers=1)
@@ -44,21 +52,25 @@ def main(trainset, testset, dataset_name):
     lambda_reg = 1e-4
     alpha = -10
 
-    net = Net(data=trainset.data, K=K, L=L, R=R, device=device, alpha=alpha)
-
+    net = Net(data=trainset.data, C=C, K=K, L=L, R=R, device=device, alpha=alpha)
     net.to(device)
 
     criterion = nn.CrossEntropyLoss()
     num_epoches = 50
     
     # optimizer = optim.Adam(net.parameters(), lr=0.1)
-    optimizers = define_optimizers(net)
+    optimizers, opt_names = define_optimizers(net)
     
-    train_loss = np.zeros((len(optimizers), num_epoches))
-
-    print("Start training...\n")
+    train_loss = np.zeros((num_epoches, len(optimizers)))
+    test_acc = np.zeros((1, len(optimizers)))
 
     for i, optimizer in enumerate(optimizers):
+        net = Net(data=trainset.data, C=C, K=K, L=L, R=R, device=device, alpha=alpha)
+        net.to(device)
+
+        print(opt_names[i])
+
+        print("Start training...\n")
 
         for epoch in range(num_epoches):
 
@@ -89,28 +101,38 @@ def main(trainset, testset, dataset_name):
                 print('[%d] loss: %.3f' %
                     (epoch + 1, running_loss))
             
-            train_loss[i, epoch] = running_loss
+            train_loss[epoch, i] = running_loss
 
-        plt.plot(train_loss[i])
-        plt.ylabel('training loss')
-        plt.show()
+        print("Start testing...\n")
 
-    print("Start testing...\n")
+        correct = 0
+        total = 0
+        with torch.no_grad():
+            for data in testloader:
+                inputs, labels = data
+                inputs = inputs.to(device)
+                labels = labels.to(device)
+                outputs = net(inputs)
+                _, predicted = torch.max(outputs.data, 1)
+                total += labels.size(0)
+                correct += (predicted == labels).sum().item()
 
-    correct = 0
-    total = 0
-    with torch.no_grad():
-        for data in testloader:
-            inputs, labels = data
-            inputs = inputs.to(device)
-            labels = labels.to(device)
-            outputs = net(inputs)
-            _, predicted = torch.max(outputs.data, 1)
-            total += labels.size(0)
-            correct += (predicted == labels).sum().item()
+        acc = (100 * correct / total)
+        print('Accuracy of the network on test data: %.3f %%' %
+          acc)
 
-    print('Accuracy of the network on test data: %.3f %%' %
-          (100 * correct / total))
+        test_acc[0, i] = acc/100
+
+    df = pd.DataFrame(data=train_loss, columns=opt_names)
+    df.to_csv("results/"+dataset_name+"_train_loss.csv", index=False)
+
+    df = pd.DataFrame(data=test_acc, columns=opt_names)
+    df.to_csv("results/"+dataset_name+"_test_acc.csv", index=False)
+
+    # plt.plot(train_loss[i])
+    # plt.ylabel('training loss')
+    # plt.show()
+
 
 if __name__ == '__main__':
 

@@ -51,11 +51,12 @@ class SoftMinLayer(nn.Module):
 
 
 class Net(nn.Module):
-    def __init__(self, data, K, L, device, R=3, alpha=-100):
+    def __init__(self, data, C, K, L, device, R=3, alpha=-100):
         super(Net, self).__init__()
         self.device = device
         self.R = R
         self.alpha=alpha
+        self.C = C
         print("Initialize shapelets...\n")
         SHAPELETS = []
         for i in range(1, R + 1):
@@ -73,7 +74,7 @@ class Net(nn.Module):
         self.num_shapelet, self.len_shapelet = K, L
         self.fc1 = nn.Linear(self.num_shapelet * self.R, 24)
         self.activation = nn.Sigmoid()
-        self.fc2 = nn.Linear(24, 2)
+        self.fc2 = nn.Linear(24, self.C)
         self.softmax = nn.Softmax(dim=1)
 
     def forward(self, x):

@@ -1,0 +1,11 @@
+#!/bin/bash
+
+dataset=$1
+
+module add seas-lab-vorobeychik
+
+mkdir -p /export/cluster-tmp/chenyehu
+
+export TMPDIR=/export/cluster-tmp/chenyehu
+
+python yehumain.py $dataset
