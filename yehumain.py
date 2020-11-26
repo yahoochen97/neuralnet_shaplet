@@ -4,6 +4,7 @@ import torch.optim as optim
 import numpy as np
 
 from utils import UCRDataset
+import os
 from os.path import expanduser
 import sys
 
@@ -28,11 +29,12 @@ def main(trainset, testset, dataset_name):
 
     n, m = trainset.data.shape
     C = np.unique(trainset.labels).shape[0]
+    print(C)
 
-    trainloader = torch.utils.data.DataLoader(trainset, batch_size=n,
+    trainloader = torch.utils.data.DataLoader(trainset, batch_size=32,
                                             shuffle=True, num_workers=1)
                                             
-    testloader = torch.utils.data.DataLoader(testset, batch_size=64,
+    testloader = torch.utils.data.DataLoader(testset, batch_size=32,
                                             shuffle=True, num_workers=1)
 
     
@@ -40,10 +42,10 @@ def main(trainset, testset, dataset_name):
     L = int(m * 0.2)
     R = 3
     lambda_reg = 1e-4
-    alpha = -10
+    alpha = -5
 
     criterion = nn.CrossEntropyLoss()
-    num_epoches = 100
+    num_epoches = 200
     
     # optimizer = optim.Adam(net.parameters(), lr=0.1)
     opt_names = define_optimizers()
@@ -57,11 +59,11 @@ def main(trainset, testset, dataset_name):
         net.to(device)
 
         if opt_name=="SGD_Vanilla":
-            optimizer = optim.SGD(net.parameters(), lr=0.01)
+            optimizer = optim.SGD(net.parameters(), lr=1)
         elif opt_name=="SGD_Momentum":
-            optimizer = optim.SGD(net.parameters(), lr=0.01, momentum=0.95)
+            optimizer = optim.SGD(net.parameters(), lr=1, momentum=0.98)
         elif opt_name=="SGD_Nesterov":
-            optimizer = optim.SGD(net.parameters(), lr=0.01, momentum=0.95, nesterov=True)
+            optimizer = optim.SGD(net.parameters(), lr=1, momentum=0.98, nesterov=True)
         else:
             optimizer = optim.Adam(net.parameters(), lr=0.01)
 
@@ -76,10 +78,7 @@ def main(trainset, testset, dataset_name):
                 inputs = inputs.to(device)
                 labels = labels.to(device)
 
-                # zeros gradient
                 optimizer.zero_grad()
-
-                # Forwarding, backpropogation, optimization
                 outputs = net(inputs)
 
                 loss = criterion(outputs, labels.long())
@@ -89,14 +88,22 @@ def main(trainset, testset, dataset_name):
                 loss += lambda_reg * torch.norm(all_linear1_params, 2) + lambda_reg * torch.norm(all_linear2_params, 2)
 
                 loss.backward()
-
-                # Update parameters
                 optimizer.step()
 
-                # show cost
-                running_loss = loss.item()
-                print('[%d] loss: %.3f' %
-                    (epoch + 1, running_loss))
+            inputs, labels = torch.from_numpy(trainset.data), torch.from_numpy(trainset.labels)
+            inputs = inputs.to(device)
+            labels = labels.to(device)
+
+            outputs = net(inputs)
+
+            running_loss = criterion(outputs, labels.long())
+            all_linear1_params = torch.cat([x.view(-1) for x in net.fc1.parameters()])
+            all_linear2_params = torch.cat([x.view(-1) for x in net.fc2.parameters()])
+
+            running_loss += lambda_reg * torch.norm(all_linear1_params, 2) + lambda_reg * torch.norm(all_linear2_params, 2)
+
+            print('[%d] loss: %.3f' %
+                (epoch + 1, running_loss))
             
             train_loss[epoch, i] = running_loss
 
@@ -136,19 +143,27 @@ def main(trainset, testset, dataset_name):
 
 if __name__ == '__main__':
 
+    dataset_folder='./UCR_TS_Archive_2015/'
+
     if len(sys.argv)==1:
-        dataset_name = 'Gun_Point'
+        for dataset_name in os.listdir(dataset_folder):
+            trainset = UCRDataset(dataset_name=dataset_name,
+                        dataset_folder=dataset_folder,
+                        TYPE="TRAIN")
+            C = np.unique(trainset.labels).shape[0]
+            print(dataset_name + " " + str(C))
+        exit()
     else:
         dataset_name = sys.argv[1]
 
     print(dataset_name)
 
     trainset = UCRDataset(dataset_name=dataset_name,
-                        dataset_folder='./UCR_TS_Archive_2015/',
+                        dataset_folder=dataset_folder,
                         TYPE="TRAIN")
 
     testset = UCRDataset(dataset_name=dataset_name,
-                        dataset_folder='./UCR_TS_Archive_2015/',
+                        dataset_folder=dataset_folder,
                         TYPE="TEST")
 
     torch.autograd.set_detect_anomaly(True)

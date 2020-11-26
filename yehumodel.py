@@ -3,7 +3,6 @@ import torch.nn as nn
 
 from utils import get_centroids_of_segments
 
-
 class SoftMinLayer(nn.Module):
     def __init__(self, shapelets, alpha=-100):
         """
@@ -87,7 +86,7 @@ class Net(nn.Module):
         for i,m in enumerate(self.smls):
             if i>=1:
                 # print(x.shape)
-                x1 =  torch.cat([x1.double(),m(x).double()],dim=1)
+                x1 = torch.cat([x1.double(),m(x).double()],dim=1)
             else:
                 x1=m(x)
 
