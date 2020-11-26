@@ -9,21 +9,14 @@ import sys
 
 from yehumodel import Net, SoftMinLayer
 
-def define_optimizers(net):
+def define_optimizers():
     opt_names = ["SGD_Vanilla",
                 "SGD_Momentum",
                 "SGD_Nesterov",
-                "Adam",
-                "LBFGS"]
+                "RMSprop",
+                "Adam"]
 
-    optimizers = [optim.SGD(net.parameters(), lr=1),
-                  optim.SGD(net.parameters(), lr=1, momentum=0.95),
-                  optim.SGD(net.parameters(), lr=1, momentum=0.95, nesterov=True),
-                  optim.Adam(net.parameters(), lr=0.1),
-                  optim.LBFGS(net.parameters(), lr=1)
-                ]
-
-    return optimizers, opt_names
+    return opt_names
 
 
 def main(trainset, testset, dataset_name):
@@ -50,21 +43,30 @@ def main(trainset, testset, dataset_name):
     lambda_reg = 1e-4
     alpha = -10
 
-    net = Net(data=trainset.data, C=C, K=K, L=L, R=R, device=device, alpha=alpha)
-    net.to(device)
-
     criterion = nn.CrossEntropyLoss()
     num_epoches = 50
     
     # optimizer = optim.Adam(net.parameters(), lr=0.1)
-    optimizers, opt_names = define_optimizers(net)
+    opt_names = define_optimizers()
     
-    train_loss = np.zeros((num_epoches, len(optimizers)))
-    test_acc = np.zeros((1, len(optimizers)))
+    train_loss = np.zeros((num_epoches, len(opt_names)))
+    test_acc = np.zeros((1, len(opt_names)))
 
-    for i, optimizer in enumerate(optimizers):
+    for i, opt_name in enumerate(opt_names):
+
         net = Net(data=trainset.data, C=C, K=K, L=L, R=R, device=device, alpha=alpha)
         net.to(device)
+
+        if opt_name=="SGD_Vanilla":
+            optimizer = optim.SGD(net.parameters(), lr=1)
+        elif opt_name=="SGD_Momentum":
+            optimizer = optim.SGD(net.parameters(), lr=1, momentum=0.95)
+        elif opt_name=="SGD_Nesterov":
+            optimizer = optim.SGD(net.parameters(), lr=1, momentum=0.95, nesterov=True)
+        elif opt_name=="RMSprop":
+            optimizer = optim.RMSprop(net.parameters(), lr=0.1)
+        else:
+            optimizer = optim.Adam(net.parameters(), lr=0.1)
 
         print(opt_names[i])
 
