@@ -2,7 +2,6 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 import numpy as np
-import pandas as pd
 
 from dataloader import UCRDataset
 from os.path import expanduser
@@ -122,11 +121,14 @@ def main(trainset, testset, dataset_name):
 
         test_acc[0, i] = acc/100
 
-    df = pd.DataFrame(data=train_loss, columns=opt_names)
-    df.to_csv("results/"+dataset_name+"_train_loss.csv", index=False)
+    np.savetxt("results/"+dataset_name+"_train_loss.csv", train_loss, delimiter=',', header=",".join(opt_names), comments="", fmt='%1.3f')
+    # df = pd.DataFrame(data=train_loss, columns=opt_names)
+    # df.to_csv(, index=False)
 
-    df = pd.DataFrame(data=test_acc, columns=opt_names)
-    df.to_csv("results/"+dataset_name+"_test_acc.csv", index=False)
+    np.savetxt("results/"+dataset_name+"_test_acc.csv", test_acc, delimiter=',', header=",".join(opt_names), comments="", fmt='%1.3f')
+
+    # df = pd.DataFrame(data=test_acc, columns=opt_names)
+    # df.to_csv("results/"+dataset_name+"_test_acc.csv", index=False)
 
     # plt.plot(train_loss[i])
     # plt.ylabel('training loss')
