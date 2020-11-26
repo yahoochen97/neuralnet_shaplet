@@ -3,6 +3,7 @@
 dataset=$1
 
 module add seas-lab-vorobeychik
+module add gcc-6.5.0
 
 mkdir -p /export/cluster-tmp/chenyehu
 
