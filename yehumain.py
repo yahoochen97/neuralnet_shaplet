@@ -2,6 +2,8 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 import numpy as np
+import matplotlib.pyplot as plt
+import pandas as pd
 
 from utils import UCRDataset
 import os
@@ -17,6 +19,55 @@ def define_optimizers():
                 "Adam"]
 
     return opt_names
+
+
+def plot_train_loss():
+    result_path = "./results/"
+    suffix = "_train_loss.csv"
+    opt_names = define_optimizers()
+    filenames = os.listdir(result_path )
+    filenames = [ filename for filename in filenames if filename.endswith(suffix) ]
+    dataset_names = np.array([ filename[:-15] for filename in filenames]).reshape((4,-1))
+    p,q = dataset_names.shape
+
+    fig, axs = plt.subplots(p, q)
+
+    for i in range(p):
+        for j in range(q):
+            dataset_name = dataset_names[i, j]
+            losses = pd.read_csv(result_path+dataset_name+suffix, index_col=False)
+            for opt_name in opt_names:
+                loss = losses[opt_name]
+                axs[i, j].plot(range(len(loss)), loss, label=opt_name)
+            axs[i, j].set_title(dataset_name)
+            axs[i, j].legend(loc=0, prop={'size': 6})
+    fig.tight_layout()
+    plt.savefig("train_losses.png", dpi=400)
+
+
+def plot_test_acc():
+    result_path = "./results/"
+    suffix = "_test_acc.csv"
+    opt_names = define_optimizers()
+    filenames = os.listdir(result_path )
+    filenames = [ filename for filename in filenames if filename.endswith(suffix) ]
+    dataset_names = np.array([ filename[:-13] for filename in filenames]).reshape((4,-1))
+    p,q = dataset_names.shape
+
+    fig, axs = plt.subplots(p, q)
+
+    for i in range(p):
+        for j in range(q):
+            dataset_name = dataset_names[i, j]
+            accs = pd.read_csv(result_path+dataset_name+suffix, index_col=False)
+            axs[i, j].barh(opt_names, accs.loc[0])
+            for k, v in enumerate(accs.loc[0]):
+                axs[i, j].text(x=v+0.01, y=k-0.25, s=str(round(v,3)))
+            axs[i, j].set_xlim(0, 1.3)
+            axs[i, j].set_title(dataset_name)
+
+    fig.tight_layout()
+    plt.savefig("test_accs.png", dpi=400)
 
 
 def main(trainset, testset, dataset_name):
@@ -146,12 +197,14 @@ if __name__ == '__main__':
     dataset_folder='./UCR_TS_Archive_2015/'
 
     if len(sys.argv)==1:
-        for dataset_name in os.listdir(dataset_folder):
-            trainset = UCRDataset(dataset_name=dataset_name,
-                        dataset_folder=dataset_folder,
-                        TYPE="TRAIN")
-            C = np.unique(trainset.labels).shape[0]
-            print(dataset_name + " " + str(C))
+        # for dataset_name in os.listdir(dataset_folder):
+        #     trainset = UCRDataset(dataset_name=dataset_name,
+        #                 dataset_folder=dataset_folder,
+        #                 TYPE="TRAIN")
+        #     C = np.unique(trainset.labels).shape[0]
+        #     print(dataset_name + " " + str(C))
+        plot_train_loss()
+        plot_test_acc()
         exit()
     else:
         dataset_name = sys.argv[1]
